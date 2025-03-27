@@ -6,7 +6,10 @@ const init = async () => {
     host: "localhost",
   });
 
+  await server.register(require("@hapi/inert"));
+
   server.route(require("./routes/tasks"));
+  server.route(require("./routes/categories"));
 
   await server.start();
   console.log("Server running on", server.info.uri);
