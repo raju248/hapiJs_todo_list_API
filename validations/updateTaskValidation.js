@@ -1,7 +1,11 @@
 const Joi = require("joi");
 
-exports.taskSchema = Joi.object({
-  title: Joi.string().required(),
+exports.updateTaskSchema = Joi.object({
+  title: Joi.string().optional(),
+  description: Joi.string().optional().allow(null, ""),
+  status: Joi.string().valid("1", "2", "3").optional(),
+  date: Joi.date().iso().optional(),
+  categoryId: Joi.number().integer().optional(),
   image: Joi.any()
     .custom((file, helpers) => {
       if (!file?.hapi?.filename) {

@@ -3,6 +3,7 @@ const { Task, Category } = require("../models");
 const { taskSchema } = require("../validations/taskValidation");
 const fs = require("fs");
 const path = require("path");
+const { updateTaskSchema } = require("../validations/updateTaskValidation");
 
 module.exports = [
   {
@@ -148,36 +149,73 @@ module.exports = [
   {
     method: "PUT",
     path: "/tasks/{id}",
-    handler: async function (request, h) {
-      try {
-        if (request?.payload?.categoryId) {
-          let category = await Category.findOne({
+    config: {
+      handler: async function (request, h) {
+        try {
+          const payload = request.payload;
+
+          const validationResult = updateTaskSchema.validate(payload, {
+            abortEarly: false,
+          });
+
+          if (validationResult.error) {
+            return h
+              .response({ errors: validationResult.error.details })
+              .code(400);
+          }
+
+          if (request?.payload?.categoryId) {
+            let category = await Category.findOne({
+              where: {
+                id: request.payload.categoryId,
+              },
+            });
+
+            if (!category) {
+              return h.response({ message: "Invalid category" }).code(404);
+            }
+          }
+
+          let task = await Task.findOne({
             where: {
-              id: request.payload.categoryId,
+              id: request.params.id,
+              isDeleted: false,
             },
           });
 
-          if (!category) {
-            return h.response({ message: "Invalid category" }).code(404);
+          if (payload.image) {
+            const uploadsDir = path.join(__dirname, "..", "uploads");
+
+            if (!fs.existsSync(uploadsDir)) {
+              fs.mkdirSync(uploadsDir, { recursive: true });
+            }
+
+            const file = payload.image;
+            const filename = `${Date.now()}_${file.hapi.filename}`;
+            const filePath = path.join(uploadsDir, filename);
+
+            const fileStream = fs.createWriteStream(filePath);
+            await file.pipe(fileStream);
+
+            payload.imagePath = filename;
           }
-        }
 
-        let task = await Task.findOne({
-          where: {
-            id: request.params.id,
-            isDeleted: false,
-          },
-        });
-
-        if (task) {
-          await task.update(request.payload);
-          return h.response({ message: "Task updated successfully" });
-        } else {
-          return h.response({ message: "Task not found" }).code(404);
+          if (task) {
+            await task.update(request.payload);
+            return h.response({ message: "Task updated successfully" });
+          } else {
+            return h.response({ message: "Task not found" }).code(404);
+          }
+        } catch (err) {
+          return h.response({ error: err.message }).code(404);
         }
-      } catch (err) {
-        return h.response({ error: err.message }).code(404);
-      }
+      },
+      payload: {
+        output: "stream",
+        parse: true,
+        allow: "multipart/form-data",
+        multipart: true,
+      },
     },
   },
   {
