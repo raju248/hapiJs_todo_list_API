@@ -18,6 +18,7 @@
   "homepage": "https://github.com/raju248/hapiJs_todo_list_API#readme",
   "dependencies": {
     "@hapi/hapi": "^21.4.0",
+    "@hapi/inert": "^7.1.0",
     "joi": "^17.13.3",
     "pg": "^8.14.1",
     "pg-hstore": "^2.3.4",

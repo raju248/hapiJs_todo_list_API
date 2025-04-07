@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+const { Category } = require("./category");
 const statuses = require("../enums/statuses");
 module.exports = (sequelize, DataTypes) => {
   class Task extends Model {
@@ -10,6 +11,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      Task.belongsTo(models.Category, {
+        foreignKey: "categoryId",
+        as: "category",
+        onDelete: "SET NULL",
+      });
     }
   }
   Task.init(
@@ -33,6 +39,18 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      categoryId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: Category,
+          key: "id",
+        },
+      },
+      imagePath: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
     },
     {
