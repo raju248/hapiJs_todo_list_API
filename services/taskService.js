@@ -2,9 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const { Task, Category } = require("../models");
 const statuses = require("../enums/statuses");
+const userRoles = require("../enums/userRoles");
 
 class TaskService {
-  static async getAllTasks(queryParams) {
+  static async getAllTasks(queryParams, role, userId = 0) {
     const includeModels = [];
     console.log(queryParams);
 
@@ -24,6 +25,10 @@ class TaskService {
       whereClause.categoryId = queryParams.categoryId;
     }
 
+    if (role == userRoles.member && userId > 0) {
+      whereClause.userId = userId;
+    }
+
     if (queryParams.includeCategoryDetails) {
       includeModels.push({
         model: Category,
@@ -40,9 +45,18 @@ class TaskService {
     return tasks;
   }
 
-  static async getTaskById(id, includeCategory) {
+  static async getTaskById(id, includeCategory, role, userId = 0) {
+    let whereClause = {
+      id,
+      isDeleted: false,
+    };
+
+    if (userRoles.member == role && userId > 0) {
+      whereClause.userId = userId;
+    }
+
     return Task.findOne({
-      where: { id, isDeleted: false },
+      where: whereClause,
       include: includeCategory
         ? [
             {
@@ -55,7 +69,7 @@ class TaskService {
     });
   }
 
-  static async createTask(payload) {
+  static async createTask(payload, userId) {
     let imagePath = null;
 
     if (payload.image) {
@@ -79,10 +93,11 @@ class TaskService {
       status: statuses.Pending,
       date: payload.date,
       imagePath,
+      userId: userId,
     });
   }
 
-  static async updateTask(id, payload) {
+  static async updateTask(id, payload, role, userId = 0) {
     if (payload.categoryId) {
       const category = await Category.findOne({
         where: { id: payload.categoryId },
@@ -90,7 +105,13 @@ class TaskService {
       if (!category) throw new Error("Invalid category");
     }
 
-    const task = await Task.findOne({ where: { id, isDeleted: false } });
+    let whereClause = { id, isDeleted: false };
+
+    if (role == userRoles.member && userId > 0) {
+      whereClause.userId = userId;
+    }
+
+    const task = await Task.findOne({ where: whereClause });
     if (!task) return null;
 
     if (payload.image) {
@@ -112,8 +133,14 @@ class TaskService {
     return task;
   }
 
-  static async deleteTask(id) {
-    const task = await Task.findOne({ where: { id, isDeleted: false } });
+  static async deleteTask(id, role, userId = 0) {
+    let whereClause = { id, isDeleted: false };
+
+    if (role == userRoles.member && userId > 0) {
+      whereClause.userId = userId;
+    }
+
+    const task = await Task.findOne({ where: whereClause });
     if (!task) return null;
 
     task.isDeleted = true;

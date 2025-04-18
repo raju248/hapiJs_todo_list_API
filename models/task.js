@@ -1,6 +1,7 @@
 "use strict";
 const { Model } = require("sequelize");
 const { Category } = require("./category");
+const { User } = require("./user");
 const statuses = require("../enums/statuses");
 module.exports = (sequelize, DataTypes) => {
   class Task extends Model {
@@ -15,6 +16,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "categoryId",
         as: "category",
         onDelete: "SET NULL",
+      });
+
+      Task.belongsTo(models.User, {
+        foreignKey: "userId",
+        as: "User",
+        onDelete: "CASCADE",
       });
     }
   }
@@ -51,6 +58,14 @@ module.exports = (sequelize, DataTypes) => {
       imagePath: {
         type: DataTypes.STRING,
         allowNull: true,
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: User,
+          key: "id",
+        },
       },
     },
     {

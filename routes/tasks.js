@@ -7,6 +7,7 @@ const {
 } = require("../validations/taskValidation");
 const { updateTaskSchema } = require("../validations/updateTaskValidation");
 const TaskService = require("../services/taskService");
+const userRoles = require("../enums/userRoles");
 
 module.exports = [
   {
@@ -14,7 +15,8 @@ module.exports = [
     path: "/tasks",
     handler: async function (request, h) {
       try {
-        const tasks = await TaskService.getAllTasks(request.query);
+        const { id, role } = request.auth.credentials;
+        const tasks = await TaskService.getAllTasks(request.query, role, id);
 
         if (tasks?.length > 0) {
           return h.response(tasks);
@@ -33,6 +35,9 @@ module.exports = [
       validate: {
         query: categoryQuery,
       },
+      auth: {
+        scope: [userRoles.admin, userRoles.member],
+      },
     },
   },
   {
@@ -40,9 +45,13 @@ module.exports = [
     path: "/tasks/{id}",
     handler: async function (request, h) {
       try {
+        const { id, role } = request.auth.credentials;
+
         const task = await TaskService.getTaskById(
           request.params.id,
-          request.query.includeCategoryDetails
+          request.query.includeCategoryDetails,
+          role,
+          id
         );
 
         if (task) {
@@ -62,6 +71,9 @@ module.exports = [
         params: taskIdParam,
         query: categoryDetailsQuery,
       },
+      auth: {
+        scope: [userRoles.admin, userRoles.member],
+      },
     },
   },
   {
@@ -69,7 +81,8 @@ module.exports = [
     path: "/tasks",
     handler: async function (request, h) {
       try {
-        const task = await TaskService.createTask(request.payload);
+        const { id } = request.auth.credentials;
+        const task = await TaskService.createTask(request.payload, id);
 
         if (task.id) {
           return h.response(task);
@@ -98,6 +111,9 @@ module.exports = [
       validate: {
         payload: taskSchema,
       },
+      auth: {
+        scope: [userRoles.admin, userRoles.member],
+      },
     },
   },
   {
@@ -105,9 +121,12 @@ module.exports = [
     path: "/tasks/{id}",
     handler: async function (request, h) {
       try {
+        const { id: userId, role } = request.auth.credentials;
         const task = await TaskService.updateTask(
           request.params.id,
-          request.payload
+          request.payload,
+          role,
+          userId
         );
 
         if (task) {
@@ -139,6 +158,9 @@ module.exports = [
         payload: updateTaskSchema,
         params: taskIdParam,
       },
+      auth: {
+        scope: [userRoles.admin, userRoles.member],
+      },
     },
   },
   {
@@ -146,7 +168,13 @@ module.exports = [
     path: "/tasks/{id}",
     handler: async function (request, h) {
       try {
-        const task = await TaskService.deleteTask(request.params.id);
+        const { id: userId, role } = request.auth.credentials;
+
+        const task = await TaskService.deleteTask(
+          request.params.id,
+          role,
+          userId
+        );
 
         if (task) {
           return h.response({ messaeg: "Task deleted successfully" });
@@ -162,6 +190,9 @@ module.exports = [
       description: "delete a task by ID",
       validate: {
         params: taskIdParam,
+      },
+      auth: {
+        scope: [userRoles.admin, userRoles.member],
       },
     },
   },
@@ -182,6 +213,7 @@ module.exports = [
       validate: {
         params: imageNameParam,
       },
+      auth: false,
     },
   },
 ];

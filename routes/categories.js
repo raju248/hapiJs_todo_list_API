@@ -6,6 +6,7 @@ const {
 } = require("../validations/categoryValidation");
 const Joi = require("joi");
 const CategoryService = require("../services/categoryService");
+const userRoles = require("../enums/userRoles");
 
 module.exports = [
   {
@@ -13,8 +14,11 @@ module.exports = [
     path: "/categories",
     handler: async function (request, h) {
       try {
+        const { id: userId, role } = request.auth.credentials;
         const categories = await CategoryService.getAll(
-          request.query.includeTasks
+          role,
+          request.query.includeTasks,
+          userId
         );
 
         if (categories?.length > 0) {
@@ -33,6 +37,9 @@ module.exports = [
       validate: {
         query: includeTasksQuery,
       },
+      auth: {
+        scope: [userRoles.admin, userRoles.member],
+      },
     },
   },
   {
@@ -40,9 +47,12 @@ module.exports = [
     path: "/categories/{id}",
     handler: async function (request, h) {
       try {
+        const { id: userId, role } = request.auth.credentials;
         const category = await CategoryService.getById(
           request.params.id,
-          request.query.includeTasks
+          role,
+          request.query.includeTasks,
+          userId
         );
 
         if (category) {
@@ -62,6 +72,9 @@ module.exports = [
         params: categoryIdParam,
         query: includeTasksQuery,
       },
+      auth: {
+        scope: [userRoles.admin, userRoles.member],
+      },
     },
   },
   {
@@ -69,7 +82,11 @@ module.exports = [
     path: "/categories",
     handler: async function (request, h) {
       try {
-        const category = await CategoryService.createCategory(request.payload);
+        const { id: userId } = request.auth.credentials;
+        const category = await CategoryService.createCategory(
+          request.payload,
+          userId
+        );
 
         if (category) {
           return h.response(category);
@@ -87,6 +104,9 @@ module.exports = [
       tags: ["api"],
       description: "Add new category",
       notes: "Creates new category and returns the object",
+      auth: {
+        scope: [userRoles.admin],
+      },
     },
   },
   {
@@ -116,6 +136,9 @@ module.exports = [
       tags: ["api"],
       description: "Update category by Id",
       notes: "Updates category by Id",
+      auth: {
+        scope: [userRoles.admin],
+      },
     },
   },
   {
@@ -135,6 +158,9 @@ module.exports = [
       notes: "Deletes the category with the specified ID",
       validate: {
         params: categoryIdParam,
+      },
+      auth: {
+        scope: [userRoles.admin],
       },
     },
   },

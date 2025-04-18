@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+const { User } = require("./user");
 module.exports = (sequelize, DataTypes) => {
   class Category extends Model {
     /**
@@ -14,11 +15,25 @@ module.exports = (sequelize, DataTypes) => {
         as: "tasks",
         onDelete: "SET NULL",
       });
+
+      Category.belongsTo(models.User, {
+        foreignKey: "userId",
+        as: "user",
+        onDelete: "CASCADE",
+      });
     }
   }
   Category.init(
     {
       name: { type: DataTypes.STRING, allowNull: false },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: User,
+          key: "id",
+        },
+      },
     },
     {
       sequelize,

@@ -1,21 +1,52 @@
+const userRoles = require("../enums/userRoles");
 const { Category, Task } = require("../models");
 
 class CategoryService {
-  static async getAll(includeTasks = false) {
+  static async getAll(role, includeTasks = false, userId = 0) {
+    let taskWhereClause = {};
+
+    if (role == userRoles.member && userId > 0) {
+      taskWhereClause.userId = userId;
+    }
+
     return Category.findAll({
-      include: includeTasks ? [{ model: Task, as: "tasks" }] : [],
+      include: includeTasks
+        ? [
+            {
+              model: Task,
+              where: taskWhereClause,
+              as: "tasks",
+              required: false,
+            },
+          ]
+        : [],
     });
   }
 
-  static async getById(id, includeTasks = false) {
+  static async getById(id, role, includeTasks = false, userId = 0) {
+    let taskWhereClause = {};
+
+    if (role == userRoles.member && userId > 0) {
+      taskWhereClause.userId = userId;
+    }
+
     return Category.findOne({
       where: { id },
-      include: includeTasks ? [{ model: Task, as: "tasks" }] : [],
+      include: includeTasks
+        ? [
+            {
+              model: Task,
+              where: taskWhereClause,
+              as: "tasks",
+              required: false,
+            },
+          ]
+        : [],
     });
   }
 
-  static async createCategory(payload) {
-    return Category.create({ name: payload.name });
+  static async createCategory(payload, userId) {
+    return Category.create({ name: payload.name, userId });
   }
 
   static async updateCategory(id, payload) {
